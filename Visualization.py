@@ -19,7 +19,7 @@ def getTable():
         newStr = s1+"-"+s2+"-"+s3
         date = datetime.strptime(newStr, "%Y-%m-%d")
         return date
-    #Ö÷³ÌĞò:
+    #ä¸»ç¨‹åº:
 
     spark = SparkSession.builder.config(conf = SparkConf()).getOrCreate()
 
@@ -41,7 +41,7 @@ def getTable():
 
 
     #rdd0 = spark.sparkContext.textFile("/user/hadoop/us-counties.txt")
-    # Á´½ÓhadoopÊı¾İ¿â
+    # é“¾æ¥hadoopæ•°æ®åº“
     rdd0 = spark.sparkContext.textFile("hdfs://localhost:9000/user/hadoop/works/china.txt")
     #rdd0 = sc.textFile("hdfs://localhost:9000/user/hadoop/works/china.txt")
     rdd1 = rdd0.map(lambda x:x.split("\t")).map(
@@ -54,11 +54,11 @@ def getTable():
     return shemaUsInfo
 # end table.py
 
-# ´´½¨ÁÙÊ±±í
+# åˆ›å»ºä¸´æ—¶è¡¨
 import table
 df = table.getTable()
 
-# before.py Ô¤´¦Àí³Étxt¸ñÊ½
+# before.py é¢„å¤„ç†æˆtxtæ ¼å¼
 import pandas as pd
 
 #.csv->.txt
@@ -69,17 +69,17 @@ with open('/home/hadoop/works/china.txt','a+',encoding='utf-8') as f:
 # end before.py
 
 
-# ÌØÕ÷·ÖÎö
-# È«¹úÊı¾İ
+# ç‰¹å¾åˆ†æ
+# å…¨å›½æ•°æ®
 df = spark.sql('SELECT dateId,SUM(confirmedCount) as confirmedCount,sum(deadCount) as deadCount ,SUM(deadIncr) as deadIncr,SUM(curedCount) as curedCount,SUM(curedIncr) as curedIncr,sum(confirmedIncr) as confirmedIncr,SUM(currentConfirmedCount) as currentConfirmedCount,SUM(suspectedCount) as suspectedCount,sum(suspectedCountIncr) as suspectedCountIncr from covid_inf group by dateId ORDER BY dateId')
 
-# ×¢²áÎªÁÙÊ±±íÈ«¹úÒßÇéÊı¾İ¹©ÏÂÒ»²½Ê¹ÓÃ
+# æ³¨å†Œä¸ºä¸´æ—¶è¡¨å…¨å›½ç–«æƒ…æ•°æ®ä¾›ä¸‹ä¸€æ­¥ä½¿ç”¨
 df.createOrReplaceTempView("covid_info")
-# 1¼ÆËãÃ¿ÈÕÈ«¹úµÄÖÎÓúÂÊºÍËÀÍöÂÊ£º
-# Ã¿ÈÕÖÎÓúÂÊ = Ã¿ÈÕÖÎÓúÈËÊı / µ±Ç°»¼²¡ÈËÊı
+# 1è®¡ç®—æ¯æ—¥å…¨å›½çš„æ²»æ„ˆç‡å’Œæ­»äº¡ç‡ï¼š
+# æ¯æ—¥æ²»æ„ˆç‡ = æ¯æ—¥æ²»æ„ˆäººæ•° / å½“å‰æ‚£ç—…äººæ•°
 df1 = spark.sql('select dateId,curedIncr / currentConfirmedCount * 100 as curedRate,deadIncr / currentConfirmedCount * 100 as deadRate,confirmedIncr,deadIncr from covid_info')
 df1.repartition(1).write.json("result1")
-# 2Í³¼ÆÎÒ¹ú½ØÖ¹Ã¿ÈÕµÄÀÛ¼ÆÈ·ÕïÈËÊıºÍÀÛ¼ÆËÀÍöÈËÊı£¬Ã¿ÈÕµÄÒÉËÆ²¡Àı¡£
+# 2ç»Ÿè®¡æˆ‘å›½æˆªæ­¢æ¯æ—¥çš„ç´¯è®¡ç¡®è¯Šäººæ•°å’Œç´¯è®¡æ­»äº¡äººæ•°ï¼Œæ¯æ—¥çš„ç–‘ä¼¼ç—…ä¾‹ã€‚
 #all
 df2 = spark.sql('select dateId,confirmedIncr,deadIncr,suspectedCountIncr from covid_info')
 df2.repartition(1).write.json("result2")
@@ -92,42 +92,42 @@ df2.repartition(1).write.json("result12")
 #5.1-6.2
 df2 = spark.sql("select dateId,confirmedIncr,deadIncr,suspectedCountIncr from covid_info where dateId >= '2021-05-01'")
 df2.repartition(1).write.json("result13")
-# ½ØÖ¹6.2£¬ÎÒ¹ú¸÷Ê¡ÀÛ¼ÆÈ·Õï¡¢ËÀÍöÈËÊıºÍ²¡ËÀÂÊ£¬ÖÎÓúÂÊ¡ª>±í¸ñ
+# æˆªæ­¢6.2ï¼Œæˆ‘å›½å„çœç´¯è®¡ç¡®è¯Šã€æ­»äº¡äººæ•°å’Œç—…æ­»ç‡ï¼Œæ²»æ„ˆç‡â€”>è¡¨æ ¼
 df3 = spark.sql('select province,sum(confirmedIncr) as confirmedCount,sum(deadIncr) as deadCount,sum(deadIncr)/sum(confirmedIncr) *100 as deadRate,sum(curedIncr)/sum(confirmedIncr) * 100 as curedRate from covid_inf  group by province')
 df3.repartition(1).write.json("result3")
-# 4 ÀÛ¼ÆËÀÍöÈËÊı×î¶àµÄ10¸öÊ¡¡ª>Â©¶·Í¼
+# 4 ç´¯è®¡æ­»äº¡äººæ•°æœ€å¤šçš„10ä¸ªçœâ€”>æ¼æ–—å›¾
 df4 = spark.sql('select province,sum(deadIncr) as deadCount from covid_inf  group by province order by sum(deadIncr) desc limit 10 ')
 df4.repartition(1).write.json("result4")
-# 5 ÀÛ¼ÆÈ·ÕïÈËÊı×î¶àµÄ10¸öÖİ¡ª>´ÊÔÆÍ¼
+# 5 ç´¯è®¡ç¡®è¯Šäººæ•°æœ€å¤šçš„10ä¸ªå·â€”>è¯äº‘å›¾
 df5 = spark.sql('select province,sum(confirmedIncr) as confirmedIncr from covid_inf  group by province order by sum(confirmedIncr) desc limit 10 ')
 df5.repartition(1).write.json("result5")
-# 6 Í³¼Æ2020ÄêÃ¿¸ö¼¾¶ÈÈ«¹úµÄµÄĞÂÔöÈ·Õï¡ª>±ı×´Í¼ 96762
+# 6 ç»Ÿè®¡2020å¹´æ¯ä¸ªå­£åº¦å…¨å›½çš„çš„æ–°å¢ç¡®è¯Šâ€”>é¥¼çŠ¶å›¾ 96762
 df6 = spark.sql("select sum(confirmedIncr) from covid_info where  dateId >= '2020-01-01' and dateId <= '2020-03-31' ")82631
 df6 = spark.sql("select sum(confirmedIncr) from covid_info where  dateId > '2020-03-31' and dateId <= '2020-06-30' ")2601
 df6 = spark.sql("select sum(confirmedIncr) from covid_info where  dateId > '2020-06-30' and dateId <= '2020-09-30' ")5809
 df6 = spark.sql("select sum(confirmedIncr) from covid_info where  dateId > '2020-09-30' and dateId <= '2020-12-31' ")5721
 
 
-# 3 È«¹úÈ·ÕïÈËÊıÅÅÃû30Ìì£º
+# 3 å…¨å›½ç¡®è¯Šäººæ•°æ’å30å¤©ï¼š
 df3 = spark.sql('select dateId,confirmedIncr from covid_info ')
 df3.repartition(1).write.json("result3")
-# 4 È«¹úÖÎÓúÈËÊıÅÅÃû30Ìì£º
+# 4 å…¨å›½æ²»æ„ˆäººæ•°æ’å30å¤©ï¼š
 df4 = spark.sql('select dateId,curedIncr from covid_info ')
 df4.repartition(1).write.json("result4")
-# 5 ½ØÖÁ6.2£¬È«¹ú¸÷µØÇø×îÖÕÈ·Õï²¡£º
+# 5 æˆªè‡³6.2ï¼Œå…¨å›½å„åœ°åŒºæœ€ç»ˆç¡®è¯Šç—…ï¼š
 df5 = spark.sql('select province,sum(confirmedIncr) as confirmedCount from covid_inf group by province order by sum(confirmedIncr) desc')
 df5.repartition(1).write.json("result5")
 
-# 6 È«¹úÃ¿ÈÕµÄÒÉËÆ²¡Àı£º
+# 6 å…¨å›½æ¯æ—¥çš„ç–‘ä¼¼ç—…ä¾‹ï¼š
 df6 = spark.sql('select dateId,suspectedCountIncr from covid_info  order by suspectedCountIncr desc limit 30')
 df6.repartition(1).write.json("result6")
 
-# 8 Í³¼ÆÃ¿¸ö¼¾¶ÈÈ«¹úµÄµÄĞÂÔöÈ·Õï
+# 8 ç»Ÿè®¡æ¯ä¸ªå­£åº¦å…¨å›½çš„çš„æ–°å¢ç¡®è¯Š
 
-# 9 Í³¼ÆÃ¿ÈÕĞÂÔöÈ·Õï²¡ÀıÔö³¤±ÈÀı
+# 9 ç»Ÿè®¡æ¯æ—¥æ–°å¢ç¡®è¯Šç—…ä¾‹å¢é•¿æ¯”ä¾‹
 
 
-# »­Í¼
+# ç”»å›¾
 from pyecharts import options as opts
 from pyecharts.charts import Bar
 from pyecharts.charts import Line
@@ -142,7 +142,7 @@ from pyecharts.globals import SymbolType
 import json
 
 
-#1.»­³öÃ¿ÈÕµÄÀÛ¼ÆÈ·Õï²¡ÀıÊıºÍËÀÍöÊıºÍÒÉËÆÊı¡ª¡ª>Ë«Öù×´Í¼
+#1.ç”»å‡ºæ¯æ—¥çš„ç´¯è®¡ç¡®è¯Šç—…ä¾‹æ•°å’Œæ­»äº¡æ•°å’Œç–‘ä¼¼æ•°â€”â€”>åŒæŸ±çŠ¶å›¾
 def drawChart_1():
     root = "/home/hadoop/works/result1/part13.json"
     print(root)
@@ -154,7 +154,7 @@ def drawChart_1():
     with open(root, 'r') as f:
         while True:
             line = f.readline()
-            if not line:                            # µ½ EOF£¬·µ»Ø¿Õ×Ö·û´®£¬ÔòÖÕÖ¹Ñ­»·
+            if not line:                            # åˆ° EOFï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œåˆ™ç»ˆæ­¢å¾ªç¯
                 break
             js = json.loads(line)
             date.append(str(js['dateId']))
@@ -164,24 +164,24 @@ def drawChart_1():
     d = (
     Bar()
     .add_xaxis(date)
-    .add_yaxis("È·ÕïÈËÊı", cases, stack="stack1")
-    .add_yaxis("ËÀÍöÈËÊı", deaths, stack="stack1")
-    .add_yaxis("ÒÉËÆÈËÊı", suspected, stack="stack1")
+    .add_yaxis("ç¡®è¯Šäººæ•°", cases, stack="stack1")
+    .add_yaxis("æ­»äº¡äººæ•°", deaths, stack="stack1")
+    .add_yaxis("ç–‘ä¼¼äººæ•°", suspected, stack="stack1")
     .set_series_opts(label_opts=opts.LabelOpts(is_show=False))
-    .set_global_opts(title_opts=opts.TitleOpts(title="ÎÒ¹úÃ¿ÈÕÀÛ¼ÆÈ·Õï¡¢ËÀÍöÈËÊıºÍÒÉËÆÈËÊı"))
+    .set_global_opts(title_opts=opts.TitleOpts(title="æˆ‘å›½æ¯æ—¥ç´¯è®¡ç¡®è¯Šã€æ­»äº¡äººæ•°å’Œç–‘ä¼¼äººæ•°"))
     .render("/home/hadoop/works/result/result13.html")
     )
     
     
     
-#2.»­³ö½ØÖ¹6.2£¬ÎÒ¹ú¸÷Ê¡ÀÛ¼ÆÈ·Õï¡¢ËÀÍöÈËÊıºÍ²¡ËÀÂÊ£¬ÖÎÓúÂÊ¡ª>±í¸ñ
+#2.ç”»å‡ºæˆªæ­¢6.2ï¼Œæˆ‘å›½å„çœç´¯è®¡ç¡®è¯Šã€æ­»äº¡äººæ•°å’Œç—…æ­»ç‡ï¼Œæ²»æ„ˆç‡â€”>è¡¨æ ¼
 def drawChart_2():
   root = "/home/hadoop/works/result1/part3.json"
   allState = []
   with open(root, 'r') as f:
       while True:
           line = f.readline()
-          if not line:                            # µ½ EOF£¬·µ»Ø¿Õ×Ö·û´®£¬ÔòÖÕÖ¹Ñ­»·
+          if not line:                            # åˆ° EOFï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œåˆ™ç»ˆæ­¢å¾ªç¯
               break
           js = json.loads(line)
           row = []
@@ -192,18 +192,18 @@ def drawChart_2():
           row.append(float(js['curedRate']))
           allState.append(row)
   table = Table()
-  headers = ["Ê¡·İ", "ÀÛ¼ÆÈ·Õï", "ËÀÍöÈËÊı", "²¡ËÀÂÊ","ÖÎÓúÂÊ"]
+  headers = ["çœä»½", "ç´¯è®¡ç¡®è¯Š", "æ­»äº¡äººæ•°", "ç—…æ­»ç‡","æ²»æ„ˆç‡"]
   rows = allState
   table.add(headers, rows)
   table.set_global_opts(
-      title_opts=ComponentTitleOpts(title="ÎÒ¹ú¸÷Ê¡ÒßÇéÒ»ÀÀ", subtitle="")
+      title_opts=ComponentTitleOpts(title="æˆ‘å›½å„çœç–«æƒ…ä¸€è§ˆ", subtitle="")
   )
   table.render("/home/hadoop/works/result/result2.html")
   
   
   
   
-#3.»­³öÃ¿ÈÕµÄĞÂÔöÈ·Õï²¡ÀıÊıºÍËÀÍöÊı¡ª¡ª>ÕÛÏßÍ¼
+#3.ç”»å‡ºæ¯æ—¥çš„æ–°å¢ç¡®è¯Šç—…ä¾‹æ•°å’Œæ­»äº¡æ•°â€”â€”>æŠ˜çº¿å›¾
 def drawChart_3():
     root = "/home/hadoop/works/result1/part2.json" 
     date = []
@@ -213,7 +213,7 @@ def drawChart_3():
     with open(root, 'r') as f:
         while True:
             line = f.readline()
-            if not line:                            # µ½ EOF£¬·µ»Ø¿Õ×Ö·û´®£¬ÔòÖÕÖ¹Ñ­»·
+            if not line:                            # åˆ° EOFï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œåˆ™ç»ˆæ­¢å¾ªç¯
                 break
             js = json.loads(line)
             date.append(str(js['dateId']))
@@ -224,19 +224,19 @@ def drawChart_3():
     Line(init_opts=opts.InitOpts(width="1600px", height="800px"))
     .add_xaxis(xaxis_data=date)
     .add_yaxis(
-        series_name="ĞÂÔöÈ·Õï",
+        series_name="æ–°å¢ç¡®è¯Š",
         y_axis=cases,
         markpoint_opts=opts.MarkPointOpts(
             data=[
-                opts.MarkPointItem(type_="max", name="×î´óÖµ")
+                opts.MarkPointItem(type_="max", name="æœ€å¤§å€¼")
             ]
         ),
         markline_opts=opts.MarkLineOpts(
-            data=[opts.MarkLineItem(type_="average", name="Æ½¾ùÖµ")]
+            data=[opts.MarkLineItem(type_="average", name="å¹³å‡å€¼")]
         ),
     )
     .set_global_opts(
-        title_opts=opts.TitleOpts(title="ÎÒ¹úÃ¿ÈÕĞÂÔöÈ·ÕïÕÛÏßÍ¼", subtitle=""),
+        title_opts=opts.TitleOpts(title="æˆ‘å›½æ¯æ—¥æ–°å¢ç¡®è¯ŠæŠ˜çº¿å›¾", subtitle=""),
         tooltip_opts=opts.TooltipOpts(trigger="axis"),
         toolbox_opts=opts.ToolboxOpts(is_show=True),
         xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
@@ -247,21 +247,21 @@ def drawChart_3():
     Line(init_opts=opts.InitOpts(width="1600px", height="800px"))
     .add_xaxis(xaxis_data=date)
     .add_yaxis(
-        series_name="ĞÂÔöËÀÍö",
+        series_name="æ–°å¢æ­»äº¡",
         y_axis=deaths,
         markpoint_opts=opts.MarkPointOpts(
-            data=[opts.MarkPointItem(type_="max", name="×î´óÖµ")]
+            data=[opts.MarkPointItem(type_="max", name="æœ€å¤§å€¼")]
         ),
         markline_opts=opts.MarkLineOpts(
             data=[
-                opts.MarkLineItem(type_="average", name="Æ½¾ùÖµ"),
+                opts.MarkLineItem(type_="average", name="å¹³å‡å€¼"),
                 opts.MarkLineItem(symbol="none", x="90%", y="max"),
-                opts.MarkLineItem(symbol="circle", type_="max", name="×î¸ßµã"),
+                opts.MarkLineItem(symbol="circle", type_="max", name="æœ€é«˜ç‚¹"),
             ]
         ),
     )
     .set_global_opts(
-        title_opts=opts.TitleOpts(title="ÎÒ¹úÃ¿ÈÕĞÂÔöËÀÍöÕÛÏßÍ¼", subtitle=""),
+        title_opts=opts.TitleOpts(title="æˆ‘å›½æ¯æ—¥æ–°å¢æ­»äº¡æŠ˜çº¿å›¾", subtitle=""),
         tooltip_opts=opts.TooltipOpts(trigger="axis"),
         toolbox_opts=opts.ToolboxOpts(is_show=True),
         xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
@@ -269,14 +269,14 @@ def drawChart_3():
     .render("/home/hadoop/works/result/result4.html")
     )
     
-#4.»­³öÎÒ¹úËÀÍöÈËÊı×î¶àµÄ10¸öÊ¡¡ª¡ª>´ÊÔÆÍ¼    
+#4.ç”»å‡ºæˆ‘å›½æ­»äº¡äººæ•°æœ€å¤šçš„10ä¸ªçœâ€”â€”>è¯äº‘å›¾    
 def drawChart_4():
     root = "/home/hadoop/works/result1/part4.json" 
     data = []
     with open(root, 'r') as f:
         while True:
             line = f.readline()
-            if not line:                            # µ½ EOF£¬·µ»Ø¿Õ×Ö·û´®£¬ÔòÖÕÖ¹Ñ­»·
+            if not line:                            # åˆ° EOFï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œåˆ™ç»ˆæ­¢å¾ªç¯
                 break
             js = json.loads(line)
             row=(str(js['province']),int(js['deadCount']))
@@ -285,18 +285,18 @@ def drawChart_4():
     c = (
     WordCloud()
     .add("", data, word_size_range=[20, 100], shape=SymbolType.DIAMOND)
-    .set_global_opts(title_opts=opts.TitleOpts(title="ÎÒ¹úËÀÍöÈËÊı×î¶àÊ¡·İTop10"))
+    .set_global_opts(title_opts=opts.TitleOpts(title="æˆ‘å›½æ­»äº¡äººæ•°æœ€å¤šçœä»½Top10"))
     .render("/home/hadoop/works/result/result5.html")
     )
     
-#5.»­³öÎÒ¹úÈ·Õï×î¶àµÄ10¸öÊ¡¡ª¡ª>´ÊÔÆÍ¼    
+#5.ç”»å‡ºæˆ‘å›½ç¡®è¯Šæœ€å¤šçš„10ä¸ªçœâ€”â€”>è¯äº‘å›¾    
 def drawChart_5():
     root = "/home/hadoop/works/result1/part5.json" 
     data = []
     with open(root, 'r') as f:
         while True:
             line = f.readline()
-            if not line:                            # µ½ EOF£¬·µ»Ø¿Õ×Ö·û´®£¬ÔòÖÕÖ¹Ñ­»·
+            if not line:                            # åˆ° EOFï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œåˆ™ç»ˆæ­¢å¾ªç¯
                 break
             js = json.loads(line)
             row=(str(js['province']),int(js['confirmedIncr']))
@@ -305,11 +305,11 @@ def drawChart_5():
     c = (
     WordCloud()
     .add("", data, word_size_range=[20, 100], shape=SymbolType.DIAMOND)
-    .set_global_opts(title_opts=opts.TitleOpts(title="ÎÒ¹úÈ·Õï×î¶àÊ¡·İTop10"))
+    .set_global_opts(title_opts=opts.TitleOpts(title="æˆ‘å›½ç¡®è¯Šæœ€å¤šçœä»½Top10"))
     .render("/home/hadoop/works/result/result6.html")
     )
     
-#6.»­³öÎÒ¹úËÀÍö×î¶àµÄ10¸öÊ¡¡ª¡ª>ÏóÖù×´Í¼  
+#6.ç”»å‡ºæˆ‘å›½æ­»äº¡æœ€å¤šçš„10ä¸ªçœâ€”â€”>è±¡æŸ±çŠ¶å›¾  
 def drawChart_6():
     root = "/home/hadoop/works/result1/part4.json" 
     state = []
@@ -317,7 +317,7 @@ def drawChart_6():
     with open(root, 'r') as f:
         while True:
             line = f.readline()
-            if not line:                            # µ½ EOF£¬·µ»Ø¿Õ×Ö·û´®£¬ÔòÖÕÖ¹Ñ­»·
+            if not line:                            # åˆ° EOFï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œåˆ™ç»ˆæ­¢å¾ªç¯
                 break
             js = json.loads(line)
             state.insert(0,str(js['province']))
@@ -338,7 +338,7 @@ def drawChart_6():
     )
     .reversal_axis()
     .set_global_opts(
-        title_opts=opts.TitleOpts(title="PictorialBar-ÎÒ¹ú¸÷Ê¡ËÀÍöÈËÊıTop10"),
+        title_opts=opts.TitleOpts(title="PictorialBar-æˆ‘å›½å„çœæ­»äº¡äººæ•°Top10"),
         xaxis_opts=opts.AxisOpts(is_show=False),
         yaxis_opts=opts.AxisOpts(
             axistick_opts=opts.AxisTickOpts(is_show=False),
@@ -350,7 +350,7 @@ def drawChart_6():
     .render("/home/hadoop/works/result/result7.html")
     )   
     
-#7.»­³öÎÒ¹úÈ·Õï×î¶àµÄ10¸öÊ¡¡ª¡ª>ÏóÖù×´Í¼  
+#7.ç”»å‡ºæˆ‘å›½ç¡®è¯Šæœ€å¤šçš„10ä¸ªçœâ€”â€”>è±¡æŸ±çŠ¶å›¾  
 def drawChart_7():
     root = "/home/hadoop/works/result1/part5.json" 
     state = []
@@ -358,7 +358,7 @@ def drawChart_7():
     with open(root, 'r') as f:
         while True:
             line = f.readline()
-            if not line:                            # µ½ EOF£¬·µ»Ø¿Õ×Ö·û´®£¬ÔòÖÕÖ¹Ñ­»·
+            if not line:                            # åˆ° EOFï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œåˆ™ç»ˆæ­¢å¾ªç¯
                 break
             js = json.loads(line)
             state.insert(0,str(js['province']))
@@ -379,7 +379,7 @@ def drawChart_7():
     )
     .reversal_axis()
     .set_global_opts(
-        title_opts=opts.TitleOpts(title="PictorialBar-ÎÒ¹ú¸÷Ê¡È·ÕïÈËÊıTop10"),
+        title_opts=opts.TitleOpts(title="PictorialBar-æˆ‘å›½å„çœç¡®è¯Šäººæ•°Top10"),
         xaxis_opts=opts.AxisOpts(is_show=False),
         yaxis_opts=opts.AxisOpts(
             axistick_opts=opts.AxisTickOpts(is_show=False),
@@ -390,14 +390,14 @@ def drawChart_7():
     )
     .render("/home/hadoop/works/result/result8.html")
     )   
-#7.ÕÒ³öÈ·Õï×î¶àµÄ10¸öÊ¡¡ª¡ª>Â©¶·Í¼
+#7.æ‰¾å‡ºç¡®è¯Šæœ€å¤šçš„10ä¸ªçœâ€”â€”>æ¼æ–—å›¾
 def drawChart_8():
     root = "/home/hadoop/works/result1/part5.json" 
     data = []
     with open(root, 'r') as f:
         while True:
             line = f.readline()
-            if not line:                            # µ½ EOF£¬·µ»Ø¿Õ×Ö·û´®£¬ÔòÖÕÖ¹Ñ­»·
+            if not line:                            # åˆ° EOFï¼Œè¿”å›ç©ºå­—ç¬¦ä¸²ï¼Œåˆ™ç»ˆæ­¢å¾ªç¯
                 break
             js = json.loads(line)
             data.insert(0,[str(js['province']),int(js['confirmedIncr'])])
@@ -413,22 +413,22 @@ def drawChart_8():
     .set_global_opts(title_opts=opts.TitleOpts(title=""))
     .render("/home/hadoop/works/result/result9.html")
     )   
-#8.ÃÀ¹úµÄ²¡ËÀÂÊ--->±ı×´Í¼   
+#8.ç¾å›½çš„ç—…æ­»ç‡--->é¥¼çŠ¶å›¾   
 def drawChart_9():
     values = []
-    values.append(["µÚÒ»¼¾¶È(%)",round(float(82631/96762)*100,2)])
-    values.append(["µÚ¶ş¼¾¶È(%)",round(float(2601/96762)*100,2)])
-    values.append(["µÚÈı¼¾¶È(%)",round(float(5809/96762)*100,2)])
-    values.append(["µÚËÄ¼¾¶È(%)",round(float(5721/96762)*100,2)])
+    values.append(["ç¬¬ä¸€å­£åº¦(%)",round(float(82631/96762)*100,2)])
+    values.append(["ç¬¬äºŒå­£åº¦(%)",round(float(2601/96762)*100,2)])
+    values.append(["ç¬¬ä¸‰å­£åº¦(%)",round(float(5809/96762)*100,2)])
+    values.append(["ç¬¬å››å­£åº¦(%)",round(float(5721/96762)*100,2)])
     c = (
     Pie()
     .add("", values)
     .set_colors(["red","orange","black","blue"])
-    .set_global_opts(title_opts=opts.TitleOpts(title="2020Äê¸÷¼¾¶ÈÈ·ÕïÈËÊıÕ¼±È"))
+    .set_global_opts(title_opts=opts.TitleOpts(title="2020å¹´å„å­£åº¦ç¡®è¯Šäººæ•°å æ¯”"))
     .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
     .render("/home/hadoop/works/result/result10.html")
     )    
-   #¿ÉÊÓ»¯Ö÷³ÌĞò£º
+   #å¯è§†åŒ–ä¸»ç¨‹åºï¼š
 index = 1
 while index<=9:
     funcStr = "drawChart_" + str(index)
