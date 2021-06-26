@@ -1,4 +1,4 @@
-# COVID19-Crawler-Analyze
+# COVID19-Crawler-Visualization
 ## 1.Environment
 - CentOS 8.4.2105
 - Hadoop3.1.3
